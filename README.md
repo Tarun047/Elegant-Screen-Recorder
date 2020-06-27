@@ -28,7 +28,7 @@
 
 ## Install
 
-- **If you have installation or compilation issues with this project, please see [our debugging guide](https://github.com/electron-react-boilerplate/electron-react-boilerplate/issues/400)**
+- **Go to release folder and open Screen Elegant Screen Setup 1.2.0.exe**
 
 First, clone the repo via git and install dependencies:
 
