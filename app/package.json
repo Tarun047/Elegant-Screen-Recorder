@@ -1,12 +1,12 @@
 {
-  "name": "electron-react-boilerplate",
-  "productName": "electron-react-boilerplate",
+  "name": "elegant-screen-recorder",
+  "productName": "Elegant Screen Recorder",
   "version": "1.2.0",
-  "description": "Electron application boilerplate based on React, React Router, Webpack, React Hot Loader for rapid application development",
+  "description": "A simple and elegant screen recorder, which is completely free, has not watermarks and has no recording length limitations",
   "main": "./main.prod.js",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
+    "name": "Tarun Gudipati",
+    "email": "gtarun047@gmail.com",
     "url": "https://github.com/electron-react-boilerplate"
   },
   "scripts": {
@@ -14,5 +14,8 @@
     "postinstall": "yarn electron-rebuild"
   },
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "ffmpeg-static": "^4.2.4",
+    "fluent-ffmpeg": "^2.1.2"
+  }
 }

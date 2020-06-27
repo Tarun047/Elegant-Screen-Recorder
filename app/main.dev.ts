@@ -54,12 +54,15 @@ const createWindow = async () => {
     await installExtensions();
   }
 
+  global.ffmpegpath = require('ffmpeg-static').replace('app.asar', 'app.asar.unpacked')
+
   mainWindow = new BrowserWindow({
     show: false,
     width: 1280,
     height: 720,
     webPreferences: {
       nodeIntegration: true,
+      experimentalFeatures: true
     },
   });
 

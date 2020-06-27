@@ -1,15 +1,13 @@
+/* eslint-disable func-names */
+/* eslint-disable promise/always-return */
+/* eslint-disable promise/catch-or-return */
 /* eslint-disable jsx-a11y/media-has-caption */
 import React from 'react';
 import electron, { DesktopCapturerSource } from 'electron';
 import {
   Button,
-  Box,
-  Card,
-  CardContent,
   Typography,
   IconButton,
-  CardMedia,
-  useTheme,
   makeStyles,
   Paper,
   DialogTitle,
@@ -21,11 +19,20 @@ import {
   InputLabel,
   Checkbox,
   FormControlLabel,
+  Collapse,
 } from '@material-ui/core';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import StopIcon from '@material-ui/icons/Stop';
 import PauseIcon from '@material-ui/icons/Pause';
-import fs from 'fs';
+import Alert from '@material-ui/lab/Alert';
+import CloseIcon from '@material-ui/icons/Close';
+import ffmpeg from 'fluent-ffmpeg';
+
+const ffmpegPath = electron.remote.getGlobal('ffmpegpath');
+console.log(ffmpegPath);
+ffmpeg.setFfmpegPath(ffmpegPath);
+
+const { Readable } = require('stream');
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -65,6 +72,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function HomePage() {
+  document.title = 'ScreenRecorder';
   const classes = useStyles();
   const videoRef = React.createRef<HTMLVideoElement>();
   const [isRecording, setIsRecording] = React.useState(false);
@@ -73,43 +81,63 @@ export default function HomePage() {
   const [myMediaRecorder, setMyMediaRecorder] = React.useState<MediaRecorder>(
     null
   );
-  const blobs: Blob[] = [];
+  let blobs: Blob[]= [];
   const [readOptions, setReadOptions] = React.useState(false);
   const [recordAudio, setRecordAudio] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
+  const [message, setMessage] = React.useState('Some Message');
+  const [progress,setProgress] = React.useState()
   // eslint-disable-next-line prefer-const
+
+  const doTranscode = async (
+    filepath: string,
+    inputPath: string | ReadableStream
+  ) => {
+    ffmpeg(inputPath)
+      .videoCodec('libx264')
+      .toFormat('mp4')
+      .on('error', function (err) {
+        console.log(`An error occurred: ${err.message}`);
+      })
+      .on('progress',function (progress){
+        setMessage(`Transcoding ...`);
+        setOpen(true);
+      })
+      .on('end', function () {
+        console.log('Processing finished !');
+        blobs = []
+        setMessage(`Recording saved to: ${filepath}`);
+        setOpen(true);
+      })
+      .save(filepath);
+  };
 
   function handleDataAvailable(event: BlobEvent) {
     if (event.data.size > 0) {
-      blobs.push(event.data);
-      toArrayBuffer(function (ab) {
-        const buffer = toBuffer(ab);
-        const fileResponse = electron.remote.dialog.showOpenDialogSync({
-          properties: ['openDirectory'],
-        });
-        if (fileResponse && fileResponse[0]) {
-          const file = `${
-            fileResponse[0]
-          }/Capture-${new Date().toISOString()}.webm`;
-          fs.writeFile(file, buffer, function (err) {
-            if (err) {
-              console.error(`Failed to save video ${err}`);
-            } else {
-              console.log(`Saved video: ${file}`);
-            }
-          });
-        }
-      });
+       blobs.push(event.data)
+    }
+  }
+
+  async function handleRecordingStopped() {
+    const file = electron.remote.dialog.showSaveDialogSync({
+      properties: ['showOverwriteConfirmation'],
+      title: 'Capture.mp4',
+    });
+    if (file) {
+      console.log(blobs);
+      const buffer = toBuffer(
+        await new Blob(blobs, { type: 'video/webm' }).arrayBuffer()
+      );
+      const stream = new Readable();
+      stream.push(buffer);
+      stream.push(null);
+      await doTranscode(file, stream);
     }
   }
 
   const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: recordAudio && {
-        mandatory: {
-          chromeMediaSource: 'desktop',
-          chromeMediaSourceId: selectedSource,
-        },
-      },
+      audio: false,
       video: {
         mandatory: {
           chromeMediaSource: 'desktop',
@@ -121,17 +149,28 @@ export default function HomePage() {
         },
       },
     });
+
+    if (recordAudio) {
+      const audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false,
+      });
+      const audioTracks = await audioStream.getAudioTracks();
+      stream.addTrack(audioTracks[0]);
+    }
     videoRef.current.srcObject = stream;
-    const mediaRecorder = new MediaRecorder(stream);
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType: 'video/webm;codecs=vp9',
+    });
     mediaRecorder.ondataavailable = handleDataAvailable;
-    mediaRecorder.start();
+    mediaRecorder.onstop = handleRecordingStopped;
+    mediaRecorder.start(1000);
     setMyMediaRecorder(mediaRecorder);
     setIsRecording(true);
     setReadOptions(false);
   };
 
   const startCapture = async () => {
-    document.title = 'ScreenRecorder';
     if (myMediaRecorder !== null) {
       myMediaRecorder.resume();
       setIsRecording(true);
@@ -144,14 +183,6 @@ export default function HomePage() {
     setReadOptions(true);
   };
 
-  function toArrayBuffer(cb: (ab: ArrayBuffer) => void) {
-    const fileReader = new FileReader();
-    fileReader.onload = function () {
-      const arrayBuffer = this.result;
-      cb(arrayBuffer as ArrayBuffer);
-    };
-    fileReader.readAsArrayBuffer(new Blob(blobs, { type: 'video/webm' }));
-  }
 
   function toBuffer(ab: ArrayBuffer) {
     const buffer = new Buffer(ab.byteLength);
@@ -200,6 +231,26 @@ export default function HomePage() {
             </IconButton>
           </div>
         </div>
+        <Collapse in={open}>
+          <Alert
+            severity="info"
+            action={
+              // eslint-disable-next-line react/jsx-wrap-multilines
+              <IconButton
+                aria-label="close"
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                <CloseIcon fontSize="inherit" />
+              </IconButton>
+            }
+          >
+            {message}
+          </Alert>
+        </Collapse>
       </Paper>
       <Dialog open={readOptions} onClose={() => setReadOptions(false)}>
         <DialogTitle id="alert-dialog-title">
@@ -242,7 +293,7 @@ export default function HomePage() {
           <Button onClick={() => setReadOptions(false)}>Cancel</Button>
         </DialogContent>
       </Dialog>
-      <video ref={videoRef} autoPlay />
+      <video ref={videoRef} autoPlay muted />
     </>
   );
 }
