@@ -2,7 +2,13 @@
 
 <p>
   Elegant Screen Recorder uses <a href="https://electron.atom.io/">Electron</a>, <a href="https://facebook.github.io/react/">React</a>, <a href="https://github.com/reactjs/redux">Redux</a>, <a href="https://github.com/reactjs/react-router">React Router</a>, <a href="https://webpack.github.io/docs/">Webpack</a> and <a href="https://github.com/gaearon/react-hot-loader">React Hot Loader</a> for rapid application development (HMR).
+  It's a simple Screen Recorder application which uses Electron Desktop Capturer on top of Navigator API  to record screen and then pipes it to ffmpeg layer for video compression and outputs a mp4 video file.
 </p>
+<div>
+    <p> What makes this stand out? </p>
+    Based on Open Source Technologies.
+    Fully free and customizable. No watermarks or recording length limitations.
+</div>
 
 <br>
 
@@ -64,7 +70,7 @@ yarn package
 
 ## Maintainers
 
-- [Tarun Gudipati]
+- Tarun Gudipati
 
 ## License
 
