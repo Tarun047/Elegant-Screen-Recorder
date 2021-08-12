@@ -5,7 +5,7 @@ module.exports = {
     'import/no-extraneous-dependencies': 'off',
   },
   parserOptions: {
-    ecmaVersion: 2020,
+    ecmaVersion: 2021,
     sourceType: 'module',
     project: './tsconfig.json',
     tsconfigRootDir: __dirname,
